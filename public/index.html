@@ -611,7 +611,7 @@ $('clearHistBtn').onclick = () => {
 
 /* ---------- websocket ---------- */
 function connect(name) {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const proto = (location.protocol === 'https:' || IS_APP) ? 'wss' : 'ws';
   const host = serverHost() || location.host;
   state.ws = new WebSocket(proto + '://' + host);
   state.ws.onopen = () => state.ws.send(JSON.stringify({ type: 'login', name }));
