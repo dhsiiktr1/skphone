@@ -107,7 +107,7 @@ async function serveFile(pathname) {
 
 Deno.serve(
   { port: Number(Deno.env.get('PORT') || 8787) },
-  (req) => {
+  async (req) => {
     const up = (req.headers.get('upgrade') || '').toLowerCase();
     if (up === 'websocket') {
       try {
@@ -116,9 +116,25 @@ Deno.serve(
         return new Response('WS error', { status: 500 });
       }
     }
+    const url = new URL(req.url);
+    if (url.pathname === '/healthz') {
+      let kv = 'unknown';
+      try {
+        const db = await Deno.openKv();
+        await db.set(['_probe', Date.now().toString()], 1);
+        kv = 'OK';
+      } catch (e) {
+        kv = 'FAIL: ' + String(e && e.message ? e.message : e).slice(0, 120);
+      }
+      return Response.json({
+        kv,
+        iso: Math.random().toString(36).slice(2, 8),
+        online: clients.size
+      });
+    }
     let pathname = '/';
     try {
-      pathname = decodeURIComponent(new URL(req.url).pathname);
+      pathname = decodeURIComponent(url.pathname);
     } catch {}
     return serveFile(pathname);
   }
